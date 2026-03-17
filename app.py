@@ -1,3 +1,4 @@
+
 import random
 import streamlit as st
 from logic_utils import get_range_for_difficulty, parse_guess, check_guess, update_score
@@ -26,9 +27,13 @@ low, high = get_range_for_difficulty(difficulty)
 
 st.sidebar.caption(f"Range: {low} to {high}")
 st.sidebar.caption(f"Attempts allowed: {attempt_limit}")
-#the attempts now seem to be working properly it goes from 0-8 and stops exactly at 8
-if "secret" not in st.session_state:
+# FIX: Regenerates secret when difficulty changes (identified with Copilot).
+if "difficulty" not in st.session_state:
+    st.session_state.difficulty = difficulty
+
+if "secret" not in st.session_state or st.session_state.difficulty != difficulty:
     st.session_state.secret = random.randint(low, high)
+    st.session_state.difficulty = difficulty
 
 if "attempts" not in st.session_state:
     st.session_state.attempts = 0
@@ -66,9 +71,16 @@ if st.session_state.status != "playing":
 
 st.subheader("Make a guess")
 
-st.info(
+# FIX: Added a pre-form attempt-limit check with Copilot so the game stops before rendering another guess.
+if st.session_state.attempts >= attempt_limit:
+    st.session_state.status = "lost"
+    st.error("Game over. Start a new game to try again.")
+    st.stop()
+
+attempt_info = st.empty()
+attempt_info.info(
     f"Guess a number between {low} and {high}. "
-    f"Attempt {st.session_state.attempts + 1} of {attempt_limit}"
+    f"Attempt {min(st.session_state.attempts + 1, attempt_limit)} of {attempt_limit}"
 )
 
 with st.expander("Developer Debug Info"):
@@ -85,17 +97,29 @@ with st.form(key=f"guess_form_{difficulty}"):
 
 # In the submit block, remove the secret type alternation
 if submit:
-    ok, guess_int, err = parse_guess(raw_guess)
+    st.session_state.attempts += 1
+    attempt_info.info(
+        f"Guess a number between {low} and {high}. "
+        f"Attempt {min(st.session_state.attempts + 1, attempt_limit)} of {attempt_limit}"
+    )
 
+    ok, guess_int, err = parse_guess(raw_guess, low, high)
+
+    # FIX: Prevents invalid input from being stored in history (verified with AI).
     if not ok:
-        st.session_state.history.append(raw_guess)
         st.error(err)
+        if st.session_state.attempts >= attempt_limit:
+            st.session_state.status = "lost"
+            st.error(
+                f"Out of attempts! "
+                f"The secret was {st.session_state.secret}. "
+                f"Score: {st.session_state.score}"
+            )
+            st.rerun()
     else:
         st.session_state.history.append(guess_int)
 
         outcome, message = check_guess(guess_int, st.session_state.secret)
-
-        st.session_state.attempts += 1
 
         if show_hint:
             st.warning(message)
@@ -113,6 +137,7 @@ if submit:
                 f"You won! The secret was {st.session_state.secret}. "
                 f"Final score: {st.session_state.score}"
             )
+            st.rerun()
         else:
             if st.session_state.attempts >= attempt_limit:
                 st.session_state.status = "lost"
@@ -121,6 +146,7 @@ if submit:
                     f"The secret was {st.session_state.secret}. "
                     f"Score: {st.session_state.score}"
                 )
+                st.rerun()
     
 
 st.divider()

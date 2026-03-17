@@ -26,3 +26,24 @@ It wrote the code, ran away, and now the game is unplayable.
 ## 📸 Demo
 
 [Insert screenshot of your fixed, winning game here]
+
+## Demo
+
+This project is a Streamlit-based number guessing game where users select a difficulty level and try to guess a randomly generated number within a limited number of attempts.
+
+### How to Run
+```bash
+pip install -r requirements.txt
+python -m streamlit run app.py
+
+Gameplay Overview
+
+Choose a difficulty (Easy, Normal, Hard)
+
+Each difficulty has a different number range and attempt limit
+
+Enter guesses and receive feedback (too high / too low)
+
+The game ends when you guess correctly or run out of attempts
+
+![alt text](image-3.png)

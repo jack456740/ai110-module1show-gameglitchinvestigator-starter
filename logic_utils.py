@@ -2,16 +2,17 @@ def get_range_for_difficulty(difficulty: str):
     """Return (low, high) inclusive range for a given difficulty."""
     if difficulty == "Easy":
         return 1, 20
+    # FIX: Normal uses the smaller range and Hard uses the larger range.
     if difficulty == "Normal":
-        return 1, 100
-    if difficulty == "Hard":
         return 1, 50
+    if difficulty == "Hard":
+        return 1, 100
     return 1, 100
 
 
-def parse_guess(raw: str):
+def parse_guess(raw: str, low: int = None, high: int = None):
     """
-    Parse user input into an int guess.
+    Parse user input into an int guess and optionally validate range.
 
     Returns: (ok: bool, guess_int: int | None, error_message: str | None)
     """
@@ -22,12 +23,12 @@ def parse_guess(raw: str):
         return False, None, "Enter a guess."
 
     try:
-        if "." in raw:
-            value = int(float(raw))
-        else:
-            value = int(raw)
+        value = int(raw.strip())
     except Exception:
         return False, None, "That is not a number."
+
+    if low is not None and high is not None and not (low <= value <= high):
+        return False, None, f"Guess must be between {low} and {high}."
 
     return True, value, None
 
@@ -41,8 +42,8 @@ def check_guess(guess, secret):
     if guess == secret:
         return "Win", "🎉 Correct!"
     if guess > secret:
-        return "Too High", "📉 Go LOWER!"  # Fixed: was "📈 Go HIGHER!"
-    return "Too Low", "📈 Go HIGHER!"  # Fixed: was "📉 Go LOWER!"
+        return "Too High", "📉 Go LOWER!"
+    return "Too Low", "📈 Go HIGHER!"
 
 
 def update_score(current_score: int, outcome: str, attempt_number: int):
